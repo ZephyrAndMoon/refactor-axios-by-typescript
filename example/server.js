@@ -25,6 +25,8 @@ app.use(bodyParser.urlencoded({ extended: true }))
 
 const router = express.Router()
 
+registerExtendRouter()
+
 router.get('/simple/get', (req, res) => {
   res.json({
     msg: 'hello world'
@@ -70,6 +72,46 @@ router.get('/error/timeout', function (req, res) {
       msg: 'hello world'
     })
   }, 3000)
+})
+
+function registerExtendRouter() {
+  router.get('/extend/get', function (req, res) {
+    res.json({
+      msg: 'hello world'
+    })
+  })
+
+  router.options('/extend/options', function (req, res) {
+    res.end()
+  })
+
+  router.delete('/extend/delete', function (req, res) {
+    res.end()
+  })
+
+  router.head('/extend/head', function (req, res) {
+    res.end()
+  })
+
+  router.put('/extend/put', function (req, res) {
+    res.json(req.body)
+  })
+
+  router.post('/extend/post', function (req, res) {
+    res.json(req.body)
+  })
+
+  router.patch('/extend/patch', function (req, res) {
+    res.json(req.body)
+  })
+}
+
+router.post('/instans/post', function (req, res) {
+  res.end('hello')
+})
+
+router.post('/config/post', function (req, res) {
+  res.json(req.body)
 })
 
 

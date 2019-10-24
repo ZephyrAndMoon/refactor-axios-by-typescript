@@ -1,8 +1,8 @@
-import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from './types'
+import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from '../types'
 
-import { parseHeaders } from './helpers/headers'
+import { parseHeaders } from '../helpers/headers'
 
-import { createError } from './helpers/error'
+import { createError } from '../helpers/error'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
@@ -17,8 +17,8 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
     if (timeout) {
       request.timeout = timeout
     }
-
-    request.open(method.toUpperCase(), url, true)
+    // 修改AxiosRequestConfig url为可选属性之后可能为undefined 使用类型断言
+    request.open(method.toUpperCase(), url!, true)
 
     Object.keys(headers).forEach(name => {
       // 如果data为空则删除content-type属性
