@@ -5,8 +5,8 @@ function normalizeHeaderName(headers: any, normalizeName: string): void {
   if (!headers) {
     return
   }
-  Object.keys(headers).forEach(name => {
-    if (name !== normalizeName && (name as string).toUpperCase() === normalizeName.toUpperCase()) {
+  Object.keys(headers).forEach((name: string): void => {
+    if (name !== normalizeName && name.toUpperCase() === normalizeName.toUpperCase()) {
       headers[normalizeName] = headers[name]
       delete headers[name]
     }

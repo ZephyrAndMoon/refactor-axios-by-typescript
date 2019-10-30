@@ -4,12 +4,6 @@ import { buildURL } from '../helpers/url'
 import { flattenHeaders } from '../helpers/headers'
 import transform from './transform'
 
-// function isPromise(obj: any): boolean {
-//   return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
-// }
-
-// console.log(transformResponseData)
-
 export default function dispatchRequest(config: AxiosRequestConfig): AxiosPromise {
   throwIfCancellationRequested(config)
   processConfig(config)

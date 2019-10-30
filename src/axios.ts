@@ -19,7 +19,7 @@ function createInstance(config: AxiosRequestConfig): AxiosStatic {
 // 接收一个默认配置参数
 const axios = createInstance(defaults)
 
-axios.create = function create(config) {
+axios.create = function(config) {
   return createInstance(mergeConfig(defaults, config))
 }
 

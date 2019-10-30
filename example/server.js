@@ -1,9 +1,15 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const cookieParser = require('cookie-parser')
+const multipart = require('connect-multiparty')
 const webpack = require('webpack')
 const webpackDevMiddleware = require('webpack-dev-middleware')
 const webpackHotMiddleware = require('webpack-hot-middleware')
 const WebpackConfig = require('./webpack.config')
+const atob = require('atob')
+const path = require('path')
+
+require('./server2')
 
 const app = express()
 const compiler = webpack(WebpackConfig)
@@ -18,61 +24,90 @@ app.use(webpackDevMiddleware(compiler, {
 
 app.use(webpackHotMiddleware(compiler))
 
-app.use(express.static(__dirname))
+app.use(express.static(__dirname, {
+  setHeaders(res) {
+    res.cookie('XSRF-TOKEN-D', '1234abc')
+  }
+}))
 
 app.use(bodyParser.json())
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(cookieParser())
+
+// 将上传的文件存放在当前目录的upload-file文件夹下
+app.use(multipart({
+  uploadDir: path.resolve(__dirname, 'upload-file')
+}))
 
 const router = express.Router()
 
+registerSimpleRouter()
+
 registerExtendRouter()
 
-router.get('/simple/get', (req, res) => {
-  res.json({
-    msg: 'hello world'
+registerMoreRouter()
+
+registerBaseRouter()
+
+registerErrorRouter()
+
+registerCancelRouter()
+
+registerOtherRouter()
+
+function registerSimpleRouter() {
+  router.get('/simple/get', (req, res) => {
+    res.json({
+      msg: 'hello world'
+    })
   })
-})
+}
 
-router.get('/base/get', (req, res) => {
-  res.json(req.query)
-})
+function registerBaseRouter() {
+  router.get('/base/get', (req, res) => {
+    res.json(req.query)
+  })
 
-router.post('/base/post', (req, res) => {
-  res.json(req.body)
-})
+  router.post('/base/post', (req, res) => {
+    res.json(req.body)
+  })
 
-router.post('/base/buffer', (req, res) => {
-  let msg = []
-  req.on('data', (chunk) => {
-    if (chunk) {
-      msg.push(chunk)
+  router.post('/base/buffer', (req, res) => {
+    let msg = []
+    req.on('data', (chunk) => {
+      if (chunk) {
+        msg.push(chunk)
+      }
+    })
+
+    req.on('end', () => {
+      let buf = Buffer.concat(msg)
+      res.json(buf.toJSON())
+    })
+  })
+}
+
+function registerErrorRouter() {
+  router.get('/error/get', function (req, res) {
+    if (Math.random() > 0.5) {
+      res.json({
+        msg: 'hello world'
+      })
+    } else {
+      res.status(500)
+      res.end()
     }
   })
 
-  req.on('end', () => {
-    let buf = Buffer.concat(msg)
-    res.json(buf.toJSON())
+  router.get('/error/timeout', function (req, res) {
+    setTimeout(() => {
+      res.json({
+        msg: 'hello world'
+      })
+    }, 3000)
   })
-})
+}
 
-router.get('/error/get', function (req, res) {
-  if (Math.random() > 0.5) {
-    res.json({
-      msg: 'hello world'
-    })
-  } else {
-    res.status(500)
-    res.end()
-  }
-})
-
-router.get('/error/timeout', function (req, res) {
-  setTimeout(() => {
-    res.json({
-      msg: 'hello world'
-    })
-  }, 3000)
-})
 
 function registerExtendRouter() {
   router.get('/extend/get', function (req, res) {
@@ -106,25 +141,53 @@ function registerExtendRouter() {
   })
 }
 
-router.post('/instans/post', function (req, res) {
-  res.end('hello')
-})
+function registerOtherRouter() {
+  router.post('/instans/post', function (req, res) {
+    res.end('hello')
+  })
 
-router.post('/config/post', function (req, res) {
-  res.json(req.body)
-})
-
-router.get('/cancel/get', function (req, res) {
-  setTimeout(() => {
-    res.json('hello')
-  }, 1000)
-})
-
-router.post('/cancel/post', function (req, res) {
-  setTimeout(() => {
+  router.post('/config/post', function (req, res) {
     res.json(req.body)
-  }, 1000)
-})
+  })
+}
+
+function registerCancelRouter() {
+  router.get('/cancel/get', function (req, res) {
+    setTimeout(() => {
+      res.json('hello')
+    }, 1000)
+  })
+
+  router.post('/cancel/post', function (req, res) {
+    setTimeout(() => {
+      res.json(req.body)
+    }, 1000)
+  })
+}
+
+function registerMoreRouter() {
+  router.get('/more/get', function (req, res) {
+    res.json(req.cookies)
+  })
+
+  router.post('/more/upload', function (req, res) {
+    console.log(req.body, req.files)
+    res.end('upload success')
+  })
+
+  router.post('/more/post', function (req, res) {
+    const auth = req.headers.authorization
+    const [type, credentials] = auth.split(' ')
+    console.log(atob(credentials))
+    const [username, password] = atob(credentials).split(':')
+    if (type === 'Basic' && username === 'wind' && password === '123456') {
+      res.json(req.body)
+    } else {
+      res.status(401)
+      res.end('UnAuthorization')
+    }
+  })
+}
 
 
 app.use(router)
