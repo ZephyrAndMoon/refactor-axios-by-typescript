@@ -40,7 +40,7 @@ export default class Axios {
       }
       config.url = url
     } else {
-      //如果url不是string类型  说明url的参数位置传的是config  所以把url赋值给config
+      // 如果url不是string类型  说明url的参数位置传的是config  所以把url赋值给config
       config = url
     }
 
@@ -74,7 +74,7 @@ export default class Axios {
       // 因为chain类型传入的泛型是any 所以取出的属性可能是undefined 所以要断言
       const { resolved, rejected } = chain.shift()!
       // 将config参数传入resolved
-      promise.then(resolved, rejected)
+      promise = promise.then(resolved, rejected)
     }
 
     return promise

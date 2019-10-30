@@ -1,23 +1,28 @@
 import xhr from './xhr'
 import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from '../types'
 import { buildURL } from '../helpers/url'
-import { transformRequest, transformResponse } from '../helpers/data'
-import { processHeaders, flattenHeaders } from '../helpers/headers'
+import { flattenHeaders } from '../helpers/headers'
+import transform from './transform'
 
-function axios(config: AxiosRequestConfig): AxiosPromise {
+// function isPromise(obj: any): boolean {
+//   return !!obj && (typeof obj === 'object' || typeof obj === 'function') && typeof obj.then === 'function';
+// }
+
+// console.log(transformResponseData)
+
+export default function dispatchRequest(config: AxiosRequestConfig): AxiosPromise {
+  throwIfCancellationRequested(config)
   processConfig(config)
   return xhr(config).then(res => {
-    // 对res.data做处理以后再返回
+    // 对res.data做处理以后再返
     return transformResponseData(res)
   })
 }
 
 function processConfig(config: AxiosRequestConfig): void {
   config.url = transformURL(config)
-  // transformRequestData会把data处理为字符串，就不是普通对象了
-  // 所以要先对headers进行处理
-  config.headers = transformHeaders(config)
-  config.data = transformRequestData(config)
+  // config.transformRequest是defaults中的transformRequest
+  config.data = transform(config.data, config.headers, config.transformRequest)
   // 因为接口类型中method是可选参数  所以可能不存在  但是有设置默认值  所以一定有method 使用断言
   config.headers = flattenHeaders(config.headers, config.method!)
 }
@@ -29,21 +34,15 @@ function transformURL(config: AxiosRequestConfig): string {
   return buildURL(url!, params)
 }
 
-function transformRequestData(config: AxiosRequestConfig): any {
-  // 返回处理后的data
-  return transformRequest(config.data)
-}
-
-function transformHeaders(config: AxiosRequestConfig): any {
-  // 传入headers默认值 保证当data为普通对象且没有headers值的时候也会添加一个headers
-  const { headers = {}, data } = config
-  // 返回处理后的headers
-  return processHeaders(headers, data)
-}
-
 function transformResponseData(res: AxiosResponse): AxiosResponse {
-  res.data = transformResponse(res.data)
+  res.data = transform(res.data, res.headers, res.config.transformResponse)
   return res
 }
 
-export default axios
+function throwIfCancellationRequested(config: AxiosRequestConfig): void {
+  // 如果config有cancelToken
+  if (config.cancelToken) {
+    // 通过这个方法检测是否cancelToken使用过
+    config.cancelToken.throwIfRequested()
+  }
+}

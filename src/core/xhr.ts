@@ -6,7 +6,7 @@ import { createError } from '../helpers/error'
 
 export default function xhr(config: AxiosRequestConfig): AxiosPromise {
   return new Promise((resolve, reject) => {
-    const { url, data = null, method = 'get', headers, responseType, timeout } = config
+    const { url, data = null, method = 'get', headers, responseType, timeout, cancelToken } = config
 
     const request = new XMLHttpRequest()
 
@@ -20,18 +20,6 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
     // 修改AxiosRequestConfig url为可选属性之后可能为undefined 使用类型断言
     request.open(method.toUpperCase(), url!, true)
 
-    Object.keys(headers).forEach(name => {
-      // 如果data为空则删除content-type属性
-      if (data === null && name.toLowerCase() === 'content-type') {
-        delete headers[name]
-      } else {
-        request.setRequestHeader(name, headers[name])
-      }
-    })
-
-    request.send(data)
-
-    //
     request.onreadystatechange = function handleLoad() {
       // 判断是否 请求已完成且响应已就绪   不是的话返回
       if (request.readyState !== 4) {
@@ -88,5 +76,23 @@ export default function xhr(config: AxiosRequestConfig): AxiosPromise {
         )
       }
     }
+
+    Object.keys(headers).forEach(name => {
+      // 如果data为空则删除content-type属性
+      if (data === null && name.toLowerCase() === 'content-type') {
+        delete headers[name]
+      } else {
+        request.setRequestHeader(name, headers[name])
+      }
+    })
+
+    if (cancelToken) {
+      cancelToken.promise.then(reason => {
+        // 取消请求
+        request.abort()
+        reject(reason)
+      })
+    }
+    request.send(data)
   })
 }
